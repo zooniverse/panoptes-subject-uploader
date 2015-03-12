@@ -14,19 +14,7 @@ fs = require 'fs'
 glob = require 'glob'
 mime = require 'mime'
 
-putFile = (url, file) ->
-  new Promise (resolve, reject) ->
-    xhr = new XMLHttpRequest
-
-    xhr.onreadystatechange = (e) =>
-      if xhr.readyState is xhr.DONE
-        if 200 <= xhr.status < 300
-          resolve xhr
-        else
-          reject xhr
-
-    xhr.open 'PUT', url
-    xhr.send file
+log = -> console.log '>>>', arguments...
 
 argOpts =
   alias:
@@ -49,46 +37,57 @@ unless args.password? then await promptly.password 'Password', defer error, args
 unless args.project? then await promptly.prompt 'Project ID', defer error, args.project
 unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, args.workflow
 
-console.log 'Args', args
-
 await Panoptes.auth.signIn(display_name: args.username, password: args.password).then(defer user).catch(console.error.bind console)
-console.log 'Signed in', user.id
+log "Signed in #{user.id} (#{user.display_name})"
+
+await Panoptes.api.type('projects').get(args.project).then(defer project).catch(console.error.bind console)
+log "Got project #{project.id} (#{project.display_name})"
 
 await Panoptes.api.type('workflows').get(args.workflow).then(defer workflow).catch(console.error.bind console)
-console.log 'Got workflow', workflow.id
+log "Got workflow #{workflow.id} (#{workflow.display_name})"
 
 subjectSet = Panoptes.api.type('subject_sets').create
-  display_name: 'New subject set (new Date().toISOString())'
+  display_name: "New subject set #{new Date().toISOString()}"
   links: project: args.project
 
 await subjectSet.save().then(defer _).catch(console.error.bind console)
-console.log 'Created subject set', subjectSet.id
+log "Created subject set #{subjectSet.id} (#{subjectSet.display_name})"
 
 await workflow.addLink('subject_sets', [subjectSet.id]).then(defer _).catch(console.error.bind console)
-console.log 'Linked to subject set from workflow'
+log 'Linked to subject set from workflow'
 
-subjects = []
+getMetadata = (data) ->
+  metadata = {}
+  for key, value of row
+    metadata[key.trim()] = value.trim?() ? value
+  metadata
+
+findImages = (searchDir, metadata) ->
+  imageFiles = []
+  for key, value of metadata
+    imageFileName = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
+    if imageFileName?
+      existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
+      if existingImageFile? and  existingImageFile not in imageFiles
+          imageFiles.push existingImageFile
+  imageFiles
+
+subjectIDs = []
 for file in args._
   file = path.resolve file
-  searchDir = path.dirname file
+  log "Processing #{file}"
 
   fileContents = fs.readFileSync(file).toString()
   rows = Baby.parse(fileContents, header: true, dynamicTyping: true).data
 
   for row, i in rows
-    imageFileNames = []
-    metadata = {}
+    log "On row #{i + 1} of #{rows.length}"
 
-    for key, value of row
-      metadata[key.trim()] = value.trim?() ? value
-
-      filename = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
-      if filename?
-        matchingFiles = glob.sync path.resolve searchDir, filename.replace /\W/g, '*'
-        imageFileNames.push matchingFiles...
+    metadata = getMetadata row
+    imageFileNames = findImages path.dirname(file), metadata
 
     if imageFileNames.length is 0
-      console.error "!!! Couldn't find file for row #{i} #{JSON.stringify metadata}"
+      console.error "!!! Couldn't find an image for row #{i + 1}"
 
     else
       subject = Panoptes.api.type('subjects').create
@@ -99,16 +98,18 @@ for file in args._
           project: args.project
 
       await subject.save().then(defer _).catch(console.error.bind console)
-      subjects.push subject
-      console.log 'Saved subject', subject.id
+      log "Saved subject #{subject.id}"
 
-      for typeToURL, i in subject.locations
-        url = typeToURL[Object.keys(typeToURL)[0]]
-        console.log 'Putting image', imageFileNames[i]
-        console.log 'To location', url
-        await request.put uri: url, body: fs.readFileSync(imageFileNames[i]).toString(), defer error, _
-        await subject.refresh().then(defer _).catch(console.error.bind console)
-        console.log 'Put image', JSON.stringify subject.locations
+      for location, ii in subject.locations
+        type = Object.keys(location)[0]
+        signedURL = location[type]
+        localImageData = fs.readFileSync(imageFileNames[ii]).toString()
 
-await subjectSet.addLink('subjects', (id for {id} in subjects)).then(defer _).catch(console.error.bind console)
-console.log 'Linked subjects to subject set'
+        await request.put uri: signedURL, body: localImageData, defer error, _
+        log "Put image #{imageFileNames[ii]}"
+
+      await subject.refresh().then(defer _).catch(console.error.bind console)
+      subjectIDs.push subject.id
+
+await subjectSet.addLink('subjects', subjectIDs).then(defer _).catch(console.error.bind console)
+log "Linked #{subjectIDs.length} subjects to subject set"
