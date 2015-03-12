@@ -5,6 +5,7 @@
   "dependencies": {
     "babyparse": "^0.4.1",
     "es6-promise": "^2.0.1",
+    "glob": "^5.0.2",
     "iced-coffee-script": "^1.8.0-d",
     "mime": "^1.3.4",
     "minimist": "^1.1.1",
