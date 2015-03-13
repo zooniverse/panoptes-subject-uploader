@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 
 require('iced-coffee-script/register');
-require('../lib/psu');
+require('../lib/panoptes-subject-uploader');

@@ -9,7 +9,7 @@ npm install --global panoptes-subject-uploader
 Then run it on a manifest file. **Images must be in the same directory as the manifest.**
 
 ```
-psu path/to/manifest.csv
+panoptes-subject-uploader path/to/manifest.csv
 ```
 
 Options (all required):

@@ -1,7 +1,7 @@
 {
   "name": "panoptes-subject-uploader",
   "version": "0.0.2",
-  "bin": "./bin/psu",
+  "bin": "./bin/panoptes-subject-uploader",
   "dependencies": {
     "babyparse": "^0.4.1",
     "es6-promise": "^2.0.1",
