@@ -22,4 +22,6 @@ Options (all required):
 
 - `--workflow` ID, defaults to env's `PANOPTES_WORKFLOW`
 
-You can also set `PANOPTES_API_HOST` and `PANOPTES_API_APPLICATION` if you want to do this on dev or something.
+Defaults to staging server. Switch it with `NODE_ENV`.
+
+You can also set `PANOPTES_API_HOST` and `PANOPTES_API_APPLICATION` if you want to do this on another host.
