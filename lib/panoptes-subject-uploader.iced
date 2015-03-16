@@ -77,7 +77,7 @@ for file in args._
   file = path.resolve file
   log "Processing #{file}"
 
-  fileContents = fs.readFileSync(file).toString()
+  fileContents = fs.readFileSync(file).toString().trim()
   rows = Baby.parse(fileContents, header: true, dynamicTyping: true).data
 
   for row, i in rows
