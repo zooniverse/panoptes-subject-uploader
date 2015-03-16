@@ -102,13 +102,21 @@ for file in args._
 
       for location, ii in subject.locations
         type = Object.keys(location)[0]
-        signedURL = location[type]
-        localImageData = fs.readFileSync(imageFileNames[ii]).toString()
 
-        await request.put uri: signedURL, body: localImageData, defer error, _
-        log "Put image #{imageFileNames[ii]}"
+        headers = {'Content-Type': type}
+        url = location[type]
+        body = fs.readFileSync imageFileNames[ii]
+
+        await request.put {headers, url, body}, defer error, response
+        unless 200 <= response.statusCode < 400
+          error = response.body
+        if error?
+          console.error '!!! Failed to put image', error
+        else
+          log "Uploaded image #{imageFileNames[ii]}"
 
       # await subject.refresh().then(defer _).catch(console.error.bind console)
+      # console.log 'Image at', JSON.stringify subject.locations
       subjectIDs.push subject.id
 
 await subjectSet.addLink('subjects', subjectIDs).then(defer _).catch(console.error.bind console)
