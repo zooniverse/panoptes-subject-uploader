@@ -108,7 +108,7 @@ for file in args._
         await request.put uri: signedURL, body: localImageData, defer error, _
         log "Put image #{imageFileNames[ii]}"
 
-      await subject.refresh().then(defer _).catch(console.error.bind console)
+      # await subject.refresh().then(defer _).catch(console.error.bind console)
       subjectIDs.push subject.id
 
 await subjectSet.addLink('subjects', subjectIDs).then(defer _).catch(console.error.bind console)
