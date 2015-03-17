@@ -55,14 +55,14 @@ unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, arg
 await Panoptes.auth.signIn(display_name: args.username, password: args.password).then(defer user).catch(console.error.bind console)
 log "Signed in #{user.id} (#{user.display_name})"
 
-await Panoptes.api.type('projects').get(args.project).then(defer project).catch(console.error.bind console)
+await Panoptes.api.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
 log "Got project #{project.id} (#{project.display_name})"
 
-await Panoptes.api.type('workflows').get(args.workflow).then(defer workflow).catch(console.error.bind console)
+await Panoptes.api.type('workflows').get("#{args.workflow}").then(defer workflow).catch(console.error.bind console)
 log "Got workflow #{workflow.id} (#{workflow.display_name})"
 
 if args.subjectSet?
-  await Panoptes.api.type('subject_sets').get(args.subjectSet).then(defer subjectSet).catch(console.error.bind console)
+  await Panoptes.api.type('subject_sets').get("#{args.subjectSet}").then(defer subjectSet).catch(console.error.bind console)
   log "Using subject set #{subjectSet.id}"
 else
   log 'Creating a new subject set'
