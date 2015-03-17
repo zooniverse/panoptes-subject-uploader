@@ -6,13 +6,15 @@ Install it:
 npm install --global panoptes-subject-uploader
 ```
 
-Then run it on a manifest file. **Images must be in the same directory as the manifest.**
+Then run it on (a) manifest file(s). **Images must be in the same directory as their manifest.**
 
 ```
-panoptes-subject-uploader path/to/manifest.csv
+panoptes-subject-uploader ./path/to/manifest.csv ./another/path/to/a/different/one.csv
 ```
 
-Options (all required):
+All manifests specified in a single run of the command are put in the same subject set.
+
+Flags (required):
 
 - `--username` defaults to env's `PANOPTES_USERNAME`
 
@@ -22,6 +24,10 @@ Options (all required):
 
 - `--workflow` ID, defaults to env's `PANOPTES_WORKFLOW`
 
-Defaults to staging server. Switch it with `NODE_ENV`.
+Optional:
 
-You can also set `PANOPTES_API_HOST` and `PANOPTES_API_APPLICATION` if you want to do this on another host.
+- `--subject-set` ID, **defaults to a new subject set**
+
+Defaults to the staging server. Switch it with e.g. `NODE_ENV=production`.
+
+You can also set `PANOPTES_API_HOST` and `PANOPTES_API_APPLICATION` manually if you want to do this on another host.
