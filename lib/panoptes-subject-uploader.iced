@@ -1,8 +1,4 @@
-# Polyfills
-require('es6-promise').polyfill()
-xhrc = require 'xmlhttprequest-cookie'
-global.XMLHttpRequest = xhrc.XMLHttpRequest
-xhrc.CookieJar.load '' # Cookies only last the session.
+require './polyfills'
 
 minimist = require 'minimist'
 promptly = require 'promptly'
@@ -14,7 +10,24 @@ fs = require 'fs'
 glob = require 'glob'
 mime = require 'mime'
 
-log = -> console.log '>>>', arguments...
+log = ->
+  console.log '>>>', arguments...
+
+getMetadata = (rawData) ->
+  metadata = {}
+  for key, value of rawData
+    metadata[key.trim()] = value.trim?() ? value
+  metadata
+
+findImages = (searchDir, metadata) ->
+  imageFiles = []
+  for key, value of metadata
+    imageFileName = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
+    if imageFileName?
+      existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
+      if existingImageFile? and  existingImageFile not in imageFiles
+        imageFiles.push existingImageFile
+  imageFiles
 
 argOpts =
   alias:
@@ -22,13 +35,15 @@ argOpts =
     p: 'password'
     r: 'project'
     w: 'workflow'
-    # s: 'subject-set', 'subject-set': 'subjectSet'
+    s: 'subject-set', 'subject-set': 'subjectSet'
+    l: 'limit'
 
   default:
     username: process.env.PANOPTES_USERNAME
     password: process.env.PANOPTES_PASSWORD
     project: process.env.PANOPTES_PROJECT
     workflow: process.env.PANOPTES_WORKFLOW
+    limit: Infinity
 
 args = minimist process.argv.slice(2), argOpts
 
@@ -46,41 +61,33 @@ log "Got project #{project.id} (#{project.display_name})"
 await Panoptes.api.type('workflows').get(args.workflow).then(defer workflow).catch(console.error.bind console)
 log "Got workflow #{workflow.id} (#{workflow.display_name})"
 
-subjectSet = Panoptes.api.type('subject_sets').create
-  display_name: "New subject set #{new Date().toISOString()}"
-  links: project: args.project
+if args.subjectSet?
+  await Panoptes.api.type('subject_sets').get(args.subjectSet).then(defer subjectSet).catch(console.error.bind console)
+  log "Using subject set #{subjectSet.id}"
+else
+  log 'Creating a new subject set'
 
-await subjectSet.save().then(defer _).catch(console.error.bind console)
-log "Created subject set #{subjectSet.id} (#{subjectSet.display_name})"
+  subjectSet = Panoptes.api.type('subject_sets').create
+    display_name: "New subject set #{new Date().toISOString()}"
+    links: project: args.project
 
-await workflow.addLink('subject_sets', [subjectSet.id]).then(defer _).catch(console.error.bind console)
-log 'Linked to subject set from workflow'
+  await subjectSet.save().then(defer _).catch(console.error.bind console)
+  log "Created subject set #{subjectSet.id} (#{subjectSet.display_name})"
 
-getMetadata = (data) ->
-  metadata = {}
-  for key, value of row
-    metadata[key.trim()] = value.trim?() ? value
-  metadata
+  await workflow.addLink('subject_sets', [subjectSet.id]).then(defer _).catch(console.error.bind console)
+  log 'Linked to subject set from workflow'
 
-findImages = (searchDir, metadata) ->
-  imageFiles = []
-  for key, value of metadata
-    imageFileName = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
-    if imageFileName?
-      existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
-      if existingImageFile? and  existingImageFile not in imageFiles
-          imageFiles.push existingImageFile
-  imageFiles
+newSubjectIDs = []
 
-subjectIDs = []
 for file in args._
   file = path.resolve file
-  log "Processing #{file}"
 
   fileContents = fs.readFileSync(file).toString().trim()
   rows = Baby.parse(fileContents, header: true, dynamicTyping: true).data
 
-  for row, i in rows
+  log "Processing manifest #{file} (#{rows.length} rows)"
+
+  for row, i in rows[0...args.limit]
     log "On row #{i + 1} of #{rows.length}"
 
     metadata = getMetadata row
@@ -91,8 +98,8 @@ for file in args._
 
     else
       subject = Panoptes.api.type('subjects').create
-        locations: for imageFileName in imageFileNames
-          mime.lookup imageFileName
+        # Locations are sent as a list of mime types.
+        locations: (mime.lookup imageFileName for imageFileName in imageFileNames)
         metadata: metadata
         links:
           project: args.project
@@ -100,24 +107,25 @@ for file in args._
       await subject.save().then(defer _).catch(console.error.bind console)
       log "Saved subject #{subject.id}"
 
+      # Locations array has been transformed into [{"mime type": "URL to upload"}]
       for location, ii in subject.locations
-        type = Object.keys(location)[0]
+        for type, url of location
+          headers = {'Content-Type': type}
+          body = fs.readFileSync imageFileNames[ii]
 
-        headers = {'Content-Type': type}
-        url = location[type]
-        body = fs.readFileSync imageFileNames[ii]
+          await request.put {headers, url, body}, defer error, response
 
-        await request.put {headers, url, body}, defer error, response
-        unless 200 <= response.statusCode < 400
-          error = response.body
-        if error?
-          console.error '!!! Failed to put image', error
-        else
-          log "Uploaded image #{imageFileNames[ii]}"
+          unless 200 <= response.statusCode < 400
+            error = response.body
+          if error?
+            console.error '!!! Failed to put image', error
+          else
+            log "Uploaded image #{imageFileNames[ii]}"
 
-      # await subject.refresh().then(defer _).catch(console.error.bind console)
-      # console.log 'Image at', JSON.stringify subject.locations
-      subjectIDs.push subject.id
+      newSubjectIDs.push subject.id
 
-await subjectSet.addLink('subjects', subjectIDs).then(defer _).catch(console.error.bind console)
-log "Linked #{subjectIDs.length} subjects to subject set"
+if newSubjectIDs.length is 0
+  log 'No subjects to link'
+else
+  await subjectSet.addLink('subjects', newSubjectIDs).then(defer _).catch(console.error.bind console)
+  log "Linked #{newSubjectIDs.length} subjects to subject set"
