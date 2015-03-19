@@ -43,6 +43,7 @@ argOpts =
     password: process.env.PANOPTES_PASSWORD
     project: process.env.PANOPTES_PROJECT
     workflow: process.env.PANOPTES_WORKFLOW
+    skip: 0 # For debugging, limit the number of rows processed per manifest
     limit: Infinity # For debugging, limit the number of rows processed per manifest
     help: false
 
@@ -60,6 +61,8 @@ if args.help or args._.length is 0
 
     Optional:
       --subject-set "345"         If omitted, a new subject set is created
+      --skip 50                   Skip the first N lines (per manifest file)
+      --limit 100                 Only create N subjects (per manifest file)
 
     Notes:
       Multiple manifests will end up in the same subject set.
@@ -107,7 +110,8 @@ for file in args._
 
   log "Processing manifest #{file} (#{rows.length} rows)"
 
-  for row, i in rows[0...args.limit]
+  for row, i in rows[args.skip...][...args.limit]
+    i += args.skip
     log "On row #{i + 1} of #{rows.length}"
 
     metadata = getMetadata row
