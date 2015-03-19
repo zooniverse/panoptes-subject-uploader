@@ -35,17 +35,37 @@ argOpts =
     p: 'password'
     r: 'project'
     w: 'workflow'
-    s: 'subject-set', 'subject-set': 'subjectSet'
-    l: 'limit'
+    'subject-set': 'subjectSet'
+    h: 'help'
 
   default:
     username: process.env.PANOPTES_USERNAME
     password: process.env.PANOPTES_PASSWORD
     project: process.env.PANOPTES_PROJECT
     workflow: process.env.PANOPTES_WORKFLOW
-    limit: Infinity
+    limit: Infinity # For debugging, limit the number of rows processed per manifest
+    help: false
 
 args = minimist process.argv.slice(2), argOpts
+
+if args.help or args._.length is 0
+  console.log '''
+    Usage: panoptes-subject-uploader [options] one/manifest.csv another/manifest.csv
+
+    Required:
+      -u, --username "my.login"   Defaults to $PANOPTES_USERNAME
+      -p, --password "p@$$w0rd"   Defaults to $PANOPTES_PASSWORD
+      -r, --project  "123"        Defaults to $PANOPTES_PROJECT
+      -w, --workflow "234"        Defaults to $PANOPTES_WORKFLOW
+
+    Optional:
+      --subject-set "345"         If omitted, a new subject set is created
+
+    Notes:
+      Multiple manifests will end up in the same subject set.
+      Images must be in the same directory as their manifests.
+  '''
+  process.exit 0
 
 unless args.username? then await promptly.prompt 'Username', defer error, args.username
 unless args.password? then await promptly.password 'Password', defer error, args.password
