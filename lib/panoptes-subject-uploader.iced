@@ -139,12 +139,17 @@ for file in args._
 
           await request.put {headers, url, body}, defer error, response
 
-          unless 200 <= response.statusCode < 400
-            error = response.body
+          if response?
+            if 200 <= response.statusCode < 400
+              log "Uploaded image #{imageFileNames[ii]}"
+            else
+              error = response.body
+
           if error?
             console.error '!!! Failed to put image', error
-          else
-            log "Uploaded image #{imageFileNames[ii]}"
+            console.error "!!! Deleting subject #{subject.id}"
+            await subject.delete().then(defer _).catch(console.error.bind console)
+            break
 
       newSubjectIDs.push subject.id
 
