@@ -22,7 +22,7 @@ getMetadata = (rawData) ->
 findImages = (searchDir, metadata) ->
   imageFiles = []
   for key, value of metadata
-    imageFileName = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
+    imageFileName = value.match?(/([^\/]+\.(?:jpg|png|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
       if existingImageFile? and  existingImageFile not in imageFiles
