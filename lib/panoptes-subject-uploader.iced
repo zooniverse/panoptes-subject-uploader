@@ -137,7 +137,7 @@ for file in args._
       # Locations array has been transformed into [{"mime type": "URL to upload"}]
       for location, ii in subject.locations
         for type, url of location
-          headers = {'Content-Type': type}
+          headers = {'Content-Type': mime.lookup imageFileNames[ii]}
           body = fs.readFileSync imageFileNames[ii]
 
           await request.put {headers, url, body}, defer error, response
