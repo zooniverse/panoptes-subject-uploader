@@ -75,8 +75,11 @@ unless args.password? then await promptly.password 'Password', defer error, args
 unless args.project? then await promptly.prompt 'Project ID', defer error, args.project
 unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, args.workflow
 
-await Panoptes.auth.signIn(display_name: args.username, password: args.password).then(defer user).catch(console.error.bind console)
+await Panoptes.auth.signIn({login: args.username, password: args.password}).then(defer user).catch(console.error.bind console)
 log "Signed in #{user.id} (#{user.display_name})"
+
+Panoptes.api.update 'params.admin' : user.admin
+log "Setting admin flag #{user.admin}"
 
 await Panoptes.api.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
 log "Got project #{project.id} (#{project.display_name})"
