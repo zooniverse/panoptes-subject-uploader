@@ -22,7 +22,7 @@ getMetadata = (rawData) ->
 findImages = (searchDir, metadata) ->
   imageFiles = []
   for key, value of metadata
-    imageFileName = value.match?(/([^\/]+\.(?:jpg|png))/i)?[1]
+    imageFileName = value.match?(/([^\/]+\.(?:jpg|png|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
       if existingImageFile? and  existingImageFile not in imageFiles
@@ -75,8 +75,11 @@ unless args.password? then await promptly.password 'Password', defer error, args
 unless args.project? then await promptly.prompt 'Project ID', defer error, args.project
 unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, args.workflow
 
-await Panoptes.auth.signIn(display_name: args.username, password: args.password).then(defer user).catch(console.error.bind console)
+await Panoptes.auth.signIn(login: args.username, password: args.password).then(defer user).catch(console.error.bind console)
 log "Signed in #{user.id} (#{user.display_name})"
+
+Panoptes.api.update 'params.admin' : user.admin
+log "Setting admin flag #{user.admin}"
 
 await Panoptes.api.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
 log "Got project #{project.id} (#{project.display_name})"
@@ -134,7 +137,7 @@ for file in args._
       # Locations array has been transformed into [{"mime type": "URL to upload"}]
       for location, ii in subject.locations
         for type, url of location
-          headers = {'Content-Type': type}
+          headers = {'Content-Type': mime.lookup imageFileNames[ii]}
           body = fs.readFileSync imageFileNames[ii]
 
           await request.put {headers, url, body}, defer error, response
