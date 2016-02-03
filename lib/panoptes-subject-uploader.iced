@@ -2,7 +2,7 @@ require './polyfills'
 
 minimist = require 'minimist'
 promptly = require 'promptly'
-Panoptes = require 'panoptes'
+{auth, apiClient} = require 'panoptes-client'
 request = require 'request'
 path = require 'path'
 Baby = require 'babyparse'
@@ -22,7 +22,7 @@ getMetadata = (rawData) ->
 findImages = (searchDir, metadata) ->
   imageFiles = []
   for key, value of metadata
-    imageFileName = value.match?(/([^\/]+\.(?:jpg|png|txt))/i)?[1]
+    imageFileName = value.match?(/([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
       if existingImageFile? and  existingImageFile not in imageFiles
@@ -75,25 +75,25 @@ unless args.password? then await promptly.password 'Password', defer error, args
 unless args.project? then await promptly.prompt 'Project ID', defer error, args.project
 unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, args.workflow
 
-await Panoptes.auth.signIn(login: args.username, password: args.password).then(defer user).catch(console.error.bind console)
+await auth.signIn(login: args.username, password: args.password).then(defer user).catch(console.error.bind console)
 log "Signed in #{user.id} (#{user.display_name})"
 
-Panoptes.api.update 'params.admin' : user.admin
+apiClient.update 'params.admin' : user.admin
 log "Setting admin flag #{user.admin}"
 
-await Panoptes.api.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
+await apiClient.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
 log "Got project #{project.id} (#{project.display_name})"
 
-await Panoptes.api.type('workflows').get("#{args.workflow}").then(defer workflow).catch(console.error.bind console)
+await apiClient.type('workflows').get("#{args.workflow}").then(defer workflow).catch(console.error.bind console)
 log "Got workflow #{workflow.id} (#{workflow.display_name})"
 
 if args.subjectSet?
-  await Panoptes.api.type('subject_sets').get("#{args.subjectSet}").then(defer subjectSet).catch(console.error.bind console)
+  await apiClient.type('subject_sets').get("#{args.subjectSet}").then(defer subjectSet).catch(console.error.bind console)
   log "Using subject set #{subjectSet.id}"
 else
   log 'Creating a new subject set'
 
-  subjectSet = Panoptes.api.type('subject_sets').create
+  subjectSet = apiClient.type('subject_sets').create
     display_name: "New subject set #{new Date().toISOString()}"
     links: project: args.project
 
@@ -124,7 +124,7 @@ for file in args._
       console.error "!!! Couldn't find an image for row #{i + 1}"
 
     else
-      subject = Panoptes.api.type('subjects').create
+      subject = apiClient.type('subjects').create
         # Locations are sent as a list of mime types.
         locations: (mime.lookup imageFileName for imageFileName in imageFileNames)
         metadata: metadata
@@ -161,3 +161,5 @@ if newSubjectIDs.length is 0
 else
   await subjectSet.addLink('subjects', newSubjectIDs).then(defer _).catch(console.error.bind console)
   log "Linked #{newSubjectIDs.length} subjects to subject set"
+
+process.exit 0
