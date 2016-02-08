@@ -1,33 +1,10 @@
-Built against Node.js 0.10.36.
+# Panoptes Subject Uploader Documentation
 
-Install it:
+Uses [Flatdoc](https://github.com/rstacruz/flatdoc) to render `documentation.md` as a pretty formatted docs page at [https://zooniverse.github.io/panoptes-subject-uploader/](https://zooniverse.github.io/panoptes-subject-uploader/).
 
-```
-npm install --global panoptes-subject-uploader
-```
+## Run locally for development
 
-Then run it on (a) manifest file(s). **Images must be in the same directory as their manifest.**
+1. Comment out line 26 of `index.html`, and uncomment line 27, which will enable your local copy of `documentation.md`.
+2. Run `make run` to start up a server at `http://localhost:8000`
 
-```
-panoptes-subject-uploader ./path/to/manifest.csv ./another/path/to/a/different/one.csv
-```
-
-All manifests specified in a single run of the command are put in the same subject set.
-
-Flags (required):
-
-- `--username` defaults to env's `PANOPTES_USERNAME`
-
-- `--password` defaults to env's `PANOPTES_PASSWORD`
-
-- `--project` ID, defaults to env's `PANOPTES_PROJECT`
-
-- `--workflow` ID, defaults to env's `PANOPTES_WORKFLOW`
-
-Optional:
-
-- `--subject-set` ID, **defaults to a new subject set**
-
-Defaults to the staging server. Switch it with e.g. `NODE_ENV=production`.
-
-You can also set `PANOPTES_API_HOST` and `PANOPTES_API_APPLICATION` manually if you want to do this on another host.
+Remember not to commit your changes to `index.html`!
