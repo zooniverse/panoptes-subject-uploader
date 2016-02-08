@@ -1,4 +1,6 @@
-Working against Node.js 4.2.3.
+Working against Node.js >=0.10.36.
+
+Detailed documentation on how to setup is available at [https://zooniverse.github.io/panoptes-subject-uploader/](https://zooniverse.github.io/panoptes-subject-uploader/).
 
 Install it:
 
