@@ -84,7 +84,7 @@ Panoptes Subject Uploader __defaults to the staging server.__ Switch it with `NO
 
 Any of the environment variables can be added to your bash profile:
 
-`echo 'export PANOPTES_PROJECT=1110' >>~/.bash_profile`
+`echo 'export PANOPTES_PROJECT="1110"' >>~/.bash_profile`
 
 Alternatively you can edit the `.bash_profile` file in a text editor like sublime text or vim.
 
