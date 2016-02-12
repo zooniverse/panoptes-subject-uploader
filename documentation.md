@@ -80,6 +80,8 @@ flags | defaults
 --- | ---
 `--subject-set` | subject set ID, __defaults to a new subject set__
 
+If you do not specify a subject set ID, the uploader will default to a new subject set and the new set will also be visible to the specified workflow in the classifier. If you do not want the subjects to be visible in the classifier yet, then create the subject set ahead of time in the project builder and specify the ID in the subject set flag.
+
 Panoptes Subject Uploader __defaults to the staging server.__ Switch it with `NODE_ENV=production` in the command line. The production environment is what zooniverse.org uses.
 
 Any of the environment variables can be added to your bash profile:
