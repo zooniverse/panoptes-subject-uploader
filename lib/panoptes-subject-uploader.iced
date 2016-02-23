@@ -145,6 +145,7 @@ for file in args._
           if response?
             if 200 <= response.statusCode < 400
               log "Uploaded image #{imageFileNames[ii]}"
+              newSubjectIDs.push subject.id
             else
               error = response.body
 
@@ -153,8 +154,6 @@ for file in args._
             console.error "!!! Deleting subject #{subject.id}"
             await subject.delete().then(defer _).catch(console.error.bind console)
             break
-
-      newSubjectIDs.push subject.id
 
 if newSubjectIDs.length is 0
   log 'No subjects to link'
