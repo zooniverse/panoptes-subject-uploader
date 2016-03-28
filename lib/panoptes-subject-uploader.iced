@@ -43,7 +43,6 @@ locationCreator = (mimeType, url) ->
   location[mimeType] = url
   location
 
-
 createSubject = (subjectData) ->
   return if ( !subjectData || !subjectData instanceof Object )
   subject = apiClient.type('subjects').create(subjectData)
@@ -86,7 +85,7 @@ if args.help or args._.length is 0
       --subject-set "345"         If omitted, a new subject set is created
       --skip 50                   Skip the first N lines (per manifest file)
       --limit 100                 Only create N subjects (per manifest file)
-      --skip-media-upload         Default to false. Designates a supplied url for each subject, instead of uploading an image.
+      --skip-media-upload         Defaults to false. If set to true, subjects will be created using the urls provided in each row without uploading the associated media.
 
     Notes:
       Multiple manifests will end up in the same subject set.
