@@ -34,7 +34,7 @@ findImagesURLs = (metadata) ->
   for key, value of metadata
     httpsRegexPattern = new RegExp("^(http|https)://", "i")
     fileRegexPattern = new RegExp("([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))$", "i")
-    if httpsRegexPattern.test(value) && fileRegexPattern.test(value)
+    if httpsRegexPattern.test(value) and fileRegexPattern.test(value)
       imageURLs.push value
   imageURLs
 
@@ -44,7 +44,7 @@ locationCreator = (mimeType, url) ->
   location
 
 createSubject = (subjectData) ->
-  return if ( !subjectData || !subjectData instanceof Object )
+  return if ( !subjectData or !subjectData instanceof Object )
   subject = apiClient.type('subjects').create(subjectData)
   await subject.save().then(defer _).catch(console.error.bind console)
   log "Saved subject #{subject.id}"
@@ -155,7 +155,7 @@ for file in args._
         log "!!! Cannot find a https url for row #{i + 1}"
         break
       
-      for url, url in imageURLs
+      for url, index in imageURLs
         await request url, defer error, response
         
         if error?
@@ -163,7 +163,7 @@ for file in args._
           break
         
         if response?
-          if response.statusCode == 200
+          if response.statusCode is 200
             mimeType = mime.lookup url
             subject.locations.push locationCreator(mimeType, url)              
             
