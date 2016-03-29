@@ -25,7 +25,7 @@ findImagesFiles = (searchDir, metadata) ->
     imageFileName = value.match?(/([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
-      if existingImageFile? and  existingImageFile not in imageFiles
+      if existingImageFile? and existingImageFile not in imageFiles
         imageFiles.push existingImageFile
   imageFiles
 
@@ -42,13 +42,6 @@ locationCreator = (mimeType, url) ->
   location = {}
   location[mimeType] = url
   location
-
-createSubject = (subjectData) ->
-  return if ( !subjectData or !subjectData instanceof Object )
-  subject = apiClient.type('subjects').create(subjectData)
-  await subject.save().then(defer _).catch(console.error.bind console)
-  log "Saved subject #{subject.id}"
-  subject
 
 argOpts =
   alias:
