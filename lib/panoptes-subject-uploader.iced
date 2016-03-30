@@ -32,8 +32,8 @@ findImagesFiles = (searchDir, metadata) ->
 findImagesURLs = (metadata) ->
   imageURLs = []
   for key, value of metadata
-    httpsRegexPattern = new RegExp("^(http|https)://", "i")
-    fileRegexPattern = new RegExp("([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))$", "i")
+    httpsRegexPattern = /^(https):\/\//i
+    fileRegexPattern = /([^\/]+.(?:jpg|jpeg|gif|png|svg|mp4|txt))$/i
     if httpsRegexPattern.test(value) and fileRegexPattern.test(value)
       imageURLs.push value
   imageURLs
