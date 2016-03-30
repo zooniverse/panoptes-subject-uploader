@@ -63,7 +63,11 @@ You can install the client from [NPM](https://www.npmjs.com/package/panoptes-sub
 
 Panoptes Subject Uploader can be used to assist with subjects upload after a project is setup with a workflow. the filenames and associated metadata must also be in (a) manifest CSV file(s). The [How To Build a Project guide](https://www.zooniverse.org/lab-how-to) on [zooniverse.org](https://www.zooniverse.org/) provides a step through process on how to prep any of these requirements.
 
-__Subject files must be in the same directory as their manifest(s).__ All manifests specified in a single run of the `panoptes-subject-uploader` command are put in the same subject set.
+__If you're uploading subject media, the subject media files must be in the same directory as their manifest(s).__ 
+
+__If you're using media hosted elsewhere, you must provide https links to the media for each subject in the subject's row in the manifest.__
+
+All manifests specified in a single run of the `panoptes-subject-uploader` command are put in the same subject set.
 
 Flags that can be set when running:
 
@@ -79,8 +83,11 @@ flags | defaults (can be set by environment variables)
 flags | defaults
 --- | ---
 `--subject-set` | subject set ID, __defaults to a new subject set__
+`--skip-media-upload` | boolean, __defaults to false__
 
 If you do not specify a subject set ID, the uploader will default to a new subject set and the new set will also be visible to the specified workflow in the classifier. If you do not want the subjects to be visible in the classifier yet, then create the subject set ahead of time in the project builder and specify the ID in the subject set flag.
+
+If you want to use media hosted elsewhere, set `--skip-media-upload=true`. You must provide a https url to the media for each subject in the manifest.
 
 Panoptes Subject Uploader __defaults to the staging server.__ Switch it with `NODE_ENV=production` in the command line. The production environment is what zooniverse.org uses.
 
