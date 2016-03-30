@@ -29,6 +29,7 @@ Flags (required):
 Optional:
 
 - `--subject-set` ID, **defaults to a new subject set**
+- `--skip-media-upload` boolean, **defaults to false**
 
 Defaults to the staging server. Switch it with e.g. `NODE_ENV=production`.
 
