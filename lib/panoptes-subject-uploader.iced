@@ -19,15 +19,29 @@ getMetadata = (rawData) ->
     metadata[key.trim()] = value.trim?() ? value
   metadata
 
-findImages = (searchDir, metadata) ->
+findImagesFiles = (searchDir, metadata) ->
   imageFiles = []
   for key, value of metadata
     imageFileName = value.match?(/([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
-      if existingImageFile? and  existingImageFile not in imageFiles
+      if existingImageFile? and existingImageFile not in imageFiles
         imageFiles.push existingImageFile
   imageFiles
+
+findImagesURLs = (metadata) ->
+  imageURLs = []
+  for key, value of metadata
+    httpsRegexPattern = /^(https):\/\//i
+    fileRegexPattern = /([^\/]+.(?:jpg|jpeg|gif|png|svg|mp4|txt))$/i
+    if httpsRegexPattern.test(value) and fileRegexPattern.test(value)
+      imageURLs.push value
+  imageURLs
+
+locationCreator = (mimeType, url) ->
+  location = {}
+  location[mimeType] = url
+  location
 
 argOpts =
   alias:
@@ -36,6 +50,7 @@ argOpts =
     r: 'project'
     w: 'workflow'
     'subject-set': 'subjectSet'
+    'skip-media-upload': 'skipMediaUpload'
     h: 'help'
 
   default:
@@ -63,6 +78,7 @@ if args.help or args._.length is 0
       --subject-set "345"         If omitted, a new subject set is created
       --skip 50                   Skip the first N lines (per manifest file)
       --limit 100                 Only create N subjects (per manifest file)
+      --skip-media-upload         Defaults to false. If set to true, subjects will be created using the urls provided in each row without uploading the associated media.
 
     Notes:
       Multiple manifests will end up in the same subject set.
@@ -118,42 +134,84 @@ for file in args._
     log "On row #{i + 1} of #{rows.length}"
 
     metadata = getMetadata row
-    imageFileNames = findImages path.dirname(file), metadata
+    
+    if args.skipMediaUpload
 
-    if imageFileNames.length is 0
-      console.error "!!! Couldn't find an image for row #{i + 1}"
+      subject = {}
+      subject.metadata = metadata
+      subject.locations = []
+      subject.links = project: args.project
 
-    else
-      subject = apiClient.type('subjects').create
-        # Locations are sent as a list of mime types.
-        locations: (mime.lookup imageFileName for imageFileName in imageFileNames)
-        metadata: metadata
-        links:
-          project: args.project
-
-      await subject.save().then(defer _).catch(console.error.bind console)
-      log "Saved subject #{subject.id}"
-
-      # Locations array has been transformed into [{"mime type": "URL to upload"}]
-      for location, ii in subject.locations
-        for type, url of location
-          headers = {'Content-Type': mime.lookup imageFileNames[ii]}
-          body = fs.readFileSync imageFileNames[ii]
-
-          await request.put {headers, url, body}, defer error, response
-
-          if response?
-            if 200 <= response.statusCode < 400
-              log "Uploaded image #{imageFileNames[ii]}"
-              newSubjectIDs.push subject.id
+      # find a https urls for the row
+      imageURLs = findImagesURLs metadata
+      if imageURLs.length is 0
+        log "!!! Cannot find a https url for row #{i + 1}"
+        break
+      
+      for url, index in imageURLs
+        await request url, defer error, response
+        
+        if error?
+          log "!!! Error requesting URL for row #{i + 1}:", error
+          break
+        
+        if response?
+          if response.statusCode is 200
+            mimeType = mime.lookup url
+            subject.locations.push locationCreator(mimeType, url)              
+            
+            newSubject = apiClient.type('subjects').create(subject)
+            await newSubject.save().then(defer _).catch(console.error.bind console)
+            log "Saved subject #{newSubject.id}"
+            
+            if newSubject?
+              newSubjectIDs.push newSubject.id
             else
-              error = response.body
-
-          if error?
-            console.error '!!! Failed to put image', error
-            console.error "!!! Deleting subject #{subject.id}"
-            await subject.delete().then(defer _).catch(console.error.bind console)
+              log "!!! Error: No subject created."
+            
+          else
+            log "!!! Error: Unexpected response code:", response.statusCode
             break
+
+
+    # create subject with media upload
+    else
+      imageFileNames = findImagesFiles path.dirname(file), metadata
+
+      if imageFileNames.length is 0
+        console.error "!!! Couldn't find an image for row #{i + 1}"
+
+      else
+        subject = apiClient.type('subjects').create
+          # Locations are sent as a list of mime types.
+          locations: (mime.lookup imageFileName for imageFileName in imageFileNames)
+          metadata: metadata
+          links:
+            project: args.project
+
+        await subject.save().then(defer _).catch(console.error.bind console)
+        log "Saved subject #{subject.id}"
+
+        # Locations array has been transformed into [{"mime type": "URL to upload"}]
+        for location, ii in subject.locations
+          for type, url of location
+            headers = {'Content-Type': mime.lookup imageFileNames[ii]}
+            body = fs.readFileSync imageFileNames[ii]
+
+            await request.put {headers, url, body}, defer error, response
+
+            if response?
+              if 200 <= response.statusCode < 400
+                log "Uploaded image #{imageFileNames[ii]}"
+                newSubjectIDs.push subject.id
+              else
+                error = response.body
+
+            if error?
+              console.error '!!! Failed to put image', error
+              console.error "!!! Deleting subject #{subject.id}"
+              await subject.delete().then(defer _).catch(console.error.bind console)
+              break
 
 if newSubjectIDs.length is 0
   log 'No subjects to link'
