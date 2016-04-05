@@ -34,13 +34,20 @@ findImagesFiles = (searchDir, metadata) ->
   imageFiles
 
 findImagesURLs = (metadata) ->
-  imageURLs = []
+  httpsImageURLs = []
   for key, value of metadata
+
     httpsRegexPattern = /^(https):\/\//i
     fileRegexPattern = /([^\/]+.(?:jpg|jpeg|gif|png|svg|mp4|txt))$/i
-    if httpsRegexPattern.test(value) and fileRegexPattern.test(value)
-      imageURLs.push value
-  imageURLs
+
+    if fileRegexPattern.test(value)
+      if httpsRegexPattern.test(value)
+        httpsImageURLs.push value
+      else
+        console.error "!!! Error: The following url is not HTTPS: #{value}"
+        process.exit(1)
+
+  httpsImageURLs
 
 locationCreator = (mimeType, url) ->
   location = {}
@@ -145,38 +152,37 @@ for file in args._
       subject.metadata = metadata
       subject.locations = []
       subject.links = project: args.project
-
-      # find a https urls for the row
       imageURLs = findImagesURLs metadata
-      if imageURLs.length is 0
-        log "!!! Cannot find a https url for row #{i + 1}"
-        break
+      
+      if imageURLs.length == 0
+        console.error "!!! Couldn't find an media files for row #{i + 1}"
+        process.exit(1)
       
       for url, index in imageURLs
         await request url, defer error, response
         
         if error?
           log "!!! Error requesting URL for row #{i + 1}:", error
-          break
+          process.exit(1)
         
         if response?
           if response.statusCode is 200
             mimeType = mime.lookup url
             subject.locations.push locationCreator(mimeType, url)              
             
-            newSubject = apiClient.type('subjects').create(subject)
-            await newSubject.save().then(defer _).catch(console.error.bind console)
-            log "Saved subject #{newSubject.id}"
-            
-            if newSubject?
-              newSubjectIDs.push newSubject.id
-            else
-              log "!!! Error: No subject created."
             
           else
             log "!!! Error: Unexpected response code:", response.statusCode
-            break
+            process.exit(1)
 
+      newSubject = apiClient.type('subjects').create(subject)
+      await newSubject.save().then(defer _).catch(console.error.bind console)
+      log "Saved subject #{newSubject.id}"
+      
+      if newSubject?
+        newSubjectIDs.push newSubject.id
+      else
+        log "!!! Error: No subject created."
 
     # create subject with media upload
     else
