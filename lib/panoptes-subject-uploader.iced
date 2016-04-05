@@ -25,8 +25,12 @@ findImagesFiles = (searchDir, metadata) ->
     imageFileName = value.match?(/([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
-      if existingImageFile? and existingImageFile not in imageFiles
-        imageFiles.push existingImageFile
+      if existingImageFile?
+        if existingImageFile not in imageFiles
+          imageFiles.push existingImageFile
+      else
+        log "!!! Error: Cannot find #{imageFileName} on the local file system."
+        process.exit 0
   imageFiles
 
 findImagesURLs = (metadata) ->
