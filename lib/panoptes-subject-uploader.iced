@@ -193,6 +193,7 @@ for file in args._
         log "Saved subject #{subject.id}"
 
         # Locations array has been transformed into [{"mime type": "URL to upload"}]
+        successCount = 0
         for location, ii in subject.locations
           for type, url of location
             headers = {'Content-Type': mime.lookup imageFileNames[ii]}
@@ -203,7 +204,8 @@ for file in args._
             if response?
               if 200 <= response.statusCode < 400
                 log "Uploaded image #{imageFileNames[ii]}"
-                newSubjectIDs.push subject.id
+                # Deal with multi-image subjects. Track if image upload is successful
+                successCount++
               else
                 error = response.body
 
@@ -212,6 +214,9 @@ for file in args._
               console.error "!!! Deleting subject #{subject.id}"
               await subject.delete().then(defer _).catch(console.error.bind console)
               break
+
+          # Deal with multi-image subject. Only add new subject id once and if all images put successfully.
+          newSubjectIDs.push subject.id if successCount is subject.locations.length
 
 if newSubjectIDs.length is 0
   log 'No subjects to link'
