@@ -25,8 +25,12 @@ findImagesFiles = (searchDir, metadata) ->
     imageFileName = value.match?(/([^\/]+\.(?:jpg|jpeg|gif|png|svg|mp4|txt))/i)?[1]
     if imageFileName?
       existingImageFile = glob.sync(path.resolve searchDir, imageFileName.replace /\W/g, '?')[0]
-      if existingImageFile? and existingImageFile not in imageFiles
-        imageFiles.push existingImageFile
+      if existingImageFile?
+        if existingImageFile not in imageFiles
+          imageFiles.push existingImageFile
+      else
+        log "!!! Error: Cannot find #{imageFileName} on the local file system."
+        process.exit 0
   imageFiles
 
 findImagesURLs = (metadata) ->
@@ -193,6 +197,7 @@ for file in args._
         log "Saved subject #{subject.id}"
 
         # Locations array has been transformed into [{"mime type": "URL to upload"}]
+        successCount = 0
         for location, ii in subject.locations
           for type, url of location
             headers = {'Content-Type': mime.lookup imageFileNames[ii]}
@@ -203,7 +208,8 @@ for file in args._
             if response?
               if 200 <= response.statusCode < 400
                 log "Uploaded image #{imageFileNames[ii]}"
-                newSubjectIDs.push subject.id
+                # Deal with multi-image subjects. Track if image upload is successful
+                successCount++
               else
                 error = response.body
 
@@ -212,6 +218,9 @@ for file in args._
               console.error "!!! Deleting subject #{subject.id}"
               await subject.delete().then(defer _).catch(console.error.bind console)
               break
+
+          # Deal with multi-image subject. Only add new subject id once and if all images put successfully.
+          newSubjectIDs.push subject.id if successCount is subject.locations.length
 
 if newSubjectIDs.length is 0
   log 'No subjects to link'
