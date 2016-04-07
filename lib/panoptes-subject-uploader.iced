@@ -44,8 +44,8 @@ findImagesURLs = (metadata) ->
       if httpsRegexPattern.test(value)
         httpsImageURLs.push value
       else
-        console.error "!!! Error: The following url is not HTTPS: #{value}"
-        process.exit(1)
+        log "!!! Error: The following url is not HTTPS: #{value}"
+        process.exit 0
 
   httpsImageURLs
 
@@ -155,15 +155,15 @@ for file in args._
       imageURLs = findImagesURLs metadata
       
       if imageURLs.length == 0
-        console.error "!!! Couldn't find an media files for row #{i + 1}"
-        process.exit(1)
+        log "!!! Couldn't find an media files for row #{i + 1}"
+        process.exit 0
       
       for url, index in imageURLs
         await request url, defer error, response
         
         if error?
           log "!!! Error requesting URL for row #{i + 1}:", error
-          process.exit(1)
+          process.exit 0
         
         if response?
           if response.statusCode is 200
@@ -173,7 +173,7 @@ for file in args._
             
           else
             log "!!! Error: Unexpected response code:", response.statusCode
-            process.exit(1)
+            process.exit 0
 
       newSubject = apiClient.type('subjects').create(subject)
       await newSubject.save().then(defer _).catch(console.error.bind console)
