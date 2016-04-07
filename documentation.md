@@ -103,4 +103,7 @@ A full example of a run of the `panoptes-subject-uploader` command:
 
 `NODE_ENV=production panoptes-subject-uploader ./manifest1.csv --username=user --password=p@ssw0rd --project=1110 --workflow=2343`
 
+## Gotchas
+__Links without File Extensions__:
+If you’re using media hosted elsewhere, the links to the media files must have one of the following file extensions: jpg, jpeg, gif, png, svg, mp4, txt. Links without one of those file extensions will be interpreted as subject metadata, not as a subject location.
 
