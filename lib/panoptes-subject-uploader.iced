@@ -155,29 +155,28 @@ for file in args._
       imageURLs = findImagesURLs metadata
       
       if imageURLs.length == 0
-        log "!!! Couldn't find an media files for row #{i + 1}"
-        process.exit 0
+        log "!!! Couldn't find an media urls for row #{i + 1}"
       
+      locationSuccessCount = 0
       for url, index in imageURLs
         await request url, defer error, response
         
         if error?
-          log "!!! Error requesting URL for row #{i + 1}:", error
-          process.exit 0
+          log "!!! Error requesting URL for #{url} on row #{i + 1}:", error
         
         if response?
           if response.statusCode is 200
             mimeType = mime.lookup url
-            subject.locations.push locationCreator(mimeType, url)              
-            
+            subject.locations.push locationCreator(mimeType, url)
+            locationSuccessCount++              
             
           else
             log "!!! Error: Unexpected response code:", response.statusCode
-            process.exit 0
 
-      newSubject = apiClient.type('subjects').create(subject)
-      await newSubject.save().then(defer _).catch(console.error.bind console)
-      log "Saved subject #{newSubject.id}"
+      if locationSuccessCount == imageURLs.length
+        newSubject = apiClient.type('subjects').create(subject)
+        await newSubject.save().then(defer _).catch(console.error.bind console)
+        log "Saved subject #{newSubject.id}"
       
       if newSubject?
         newSubjectIDs.push newSubject.id
