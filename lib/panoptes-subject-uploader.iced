@@ -34,13 +34,20 @@ findImagesFiles = (searchDir, metadata) ->
   imageFiles
 
 findImagesURLs = (metadata) ->
-  imageURLs = []
+  httpsImageURLs = []
   for key, value of metadata
+
     httpsRegexPattern = /^(https):\/\//i
     fileRegexPattern = /([^\/]+.(?:jpg|jpeg|gif|png|svg|mp4|txt))$/i
-    if httpsRegexPattern.test(value) and fileRegexPattern.test(value)
-      imageURLs.push value
-  imageURLs
+
+    if fileRegexPattern.test(value)
+      if httpsRegexPattern.test(value)
+        httpsImageURLs.push value
+      else
+        log "!!! Error: The following url is not HTTPS: #{value}"
+        process.exit 0
+
+  httpsImageURLs
 
 locationCreator = (mimeType, url) ->
   location = {}
@@ -145,38 +152,36 @@ for file in args._
       subject.metadata = metadata
       subject.locations = []
       subject.links = project: args.project
-
-      # find a https urls for the row
       imageURLs = findImagesURLs metadata
-      if imageURLs.length is 0
-        log "!!! Cannot find a https url for row #{i + 1}"
-        break
       
+      if imageURLs.length == 0
+        log "!!! Couldn't find an media urls for row #{i + 1}"
+      
+      locationSuccessCount = 0
       for url, index in imageURLs
         await request url, defer error, response
         
         if error?
-          log "!!! Error requesting URL for row #{i + 1}:", error
-          break
+          log "!!! Error requesting URL for #{url} on row #{i + 1}:", error
         
         if response?
           if response.statusCode is 200
             mimeType = mime.lookup url
-            subject.locations.push locationCreator(mimeType, url)              
-            
-            newSubject = apiClient.type('subjects').create(subject)
-            await newSubject.save().then(defer _).catch(console.error.bind console)
-            log "Saved subject #{newSubject.id}"
-            
-            if newSubject?
-              newSubjectIDs.push newSubject.id
-            else
-              log "!!! Error: No subject created."
+            subject.locations.push locationCreator(mimeType, url)
+            locationSuccessCount++              
             
           else
             log "!!! Error: Unexpected response code:", response.statusCode
-            break
 
+      if locationSuccessCount == imageURLs.length
+        newSubject = apiClient.type('subjects').create(subject)
+        await newSubject.save().then(defer _).catch(console.error.bind console)
+        log "Saved subject #{newSubject.id}"
+      
+      if newSubject?
+        newSubjectIDs.push newSubject.id
+      else
+        log "!!! Error: No subject created."
 
     # create subject with media upload
     else
