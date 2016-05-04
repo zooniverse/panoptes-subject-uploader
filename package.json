@@ -1,6 +1,6 @@
 {
   "name": "panoptes-subject-uploader",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "bin": "./bin/panoptes-subject-uploader",
   "dependencies": {
     "babyparse": "^0.4.1",
