@@ -10,9 +10,23 @@ Baby = require 'babyparse'
 fs = require 'fs'
 glob = require 'glob'
 mime = require 'mime'
+winston = require 'winston'
 
-log = ->
-  console.log '>>>', arguments...
+log = new (winston.Logger)({
+  level: 'info',
+  transports: [
+    new (winston.transports.Console)({ 
+      colorize: true,
+      humanReadableUnhandledException: true,
+      timestamp: true
+    }),
+    new (winston.transports.File)({ 
+      filename: 'panoptes-subject-uploader.log'
+      humanReadableUnhandledException: true,
+      timestamp: true
+    })
+  ]
+});
 
 getMetadata = (rawData) ->
   metadata = {}
@@ -30,8 +44,7 @@ findImagesFiles = (searchDir, metadata) ->
         if existingImageFile not in imageFiles
           imageFiles.push existingImageFile
       else
-        log "!!! Error: Cannot find #{imageFileName} on the local file system."
-        process.exit 0
+        log.error "!!! Error: Cannot find #{imageFileName} on the local file system."
   imageFiles
 
 findImagesURLs = (metadata) ->
@@ -45,8 +58,7 @@ findImagesURLs = (metadata) ->
       if httpsRegexPattern.test(value)
         httpsImageURLs.push value
       else
-        log "!!! Error: The following url is not HTTPS: #{value}"
-        process.exit 0
+        log.error "!!! Error: The following url is not HTTPS: #{value}"
 
   httpsImageURLs
 
@@ -103,33 +115,33 @@ unless args.password? then await promptly.password 'Password', defer error, args
 unless args.project? then await promptly.prompt 'Project ID', defer error, args.project
 unless args.workflow? then await promptly.prompt 'Workflow ID', defer error, args.workflow
 
-await auth.signIn(login: args.username, password: args.password).then(defer user).catch(console.error.bind console)
-log "Signed in #{user.id} (#{user.display_name})"
+await auth.signIn(login: args.username, password: args.password).then(defer user).catch(log.error.bind console)
+log.info "Signed in #{user.id} (#{user.display_name})"
 
 apiClient.update 'params.admin' : user.admin
-log "Setting admin flag #{user.admin}"
+log.info "Setting admin flag #{user.admin}"
 
-await apiClient.type('projects').get("#{args.project}").then(defer project).catch(console.error.bind console)
-log "Got project #{project.id} (#{project.display_name})"
+await apiClient.type('projects').get("#{args.project}").then(defer project).catch(log.error.bind console)
+log.info "Got project #{project.id} (#{project.display_name})"
 
-await apiClient.type('workflows').get("#{args.workflow}").then(defer workflow).catch(console.error.bind console)
-log "Got workflow #{workflow.id} (#{workflow.display_name})"
+await apiClient.type('workflows').get("#{args.workflow}").then(defer workflow).catch(log.error.bind console)
+log.info "Got workflow #{workflow.id} (#{workflow.display_name})"
 
 if args.subjectSet?
-  await apiClient.type('subject_sets').get("#{args.subjectSet}").then(defer subjectSet).catch(console.error.bind console)
-  log "Using subject set #{subjectSet.id}"
+  await apiClient.type('subject_sets').get("#{args.subjectSet}").then(defer subjectSet).catch(log.error.bind console)
+  log.info "Using subject set #{subjectSet.id}"
 else
-  log 'Creating a new subject set'
+  log.info 'Creating a new subject set'
 
   subjectSet = apiClient.type('subject_sets').create
     display_name: "New subject set #{new Date().toISOString()}"
     links: project: args.project
 
-  await subjectSet.save().then(defer _).catch(console.error.bind console)
-  log "Created subject set #{subjectSet.id} (#{subjectSet.display_name})"
+  await subjectSet.save().then(defer _).catch(log.error.bind console)
+  log.info "Created subject set #{subjectSet.id} (#{subjectSet.display_name})"
 
-  await workflow.addLink('subject_sets', [subjectSet.id]).then(defer _).catch(console.error.bind console)
-  log 'Linked to subject set from workflow'
+  await workflow.addLink('subject_sets', [subjectSet.id]).then(defer _).catch(log.error.bind console)
+  log.info 'Linked to subject set from workflow'
 
 newSubjectIDs = []
 
@@ -139,11 +151,11 @@ for file in args._
   fileContents = fs.readFileSync(file).toString().trim()
   rows = Baby.parse(fileContents, header: true, dynamicTyping: true).data
 
-  log "Processing manifest #{file} (#{rows.length} rows)"
+  log.info "Processing manifest #{file} (#{rows.length} rows)"
 
   for row, i in rows[args.skip...][...args.limit]
     i += args.skip
-    log "On row #{i + 1} of #{rows.length}"
+    log.info "On row #{i + 1} of #{rows.length}"
 
     metadata = getMetadata row
     
@@ -156,14 +168,14 @@ for file in args._
       imageURLs = findImagesURLs metadata
       
       if imageURLs.length == 0
-        log "!!! Couldn't find an media urls for row #{i + 1}"
+        log.error "!!! Couldn't find an media urls for row #{i + 1}"
       
       locationSuccessCount = 0
       for url, index in imageURLs
         await request url, defer error, response
         
         if error?
-          log "!!! Error requesting URL for #{url} on row #{i + 1}:", error
+          log.error "!!! Error requesting URL for #{url} on row #{i + 1}:", error
         
         if response?
           if response.statusCode is 200
@@ -172,24 +184,24 @@ for file in args._
             locationSuccessCount++              
             
           else
-            log "!!! Error: Unexpected response code:", response.statusCode
+            log.error "!!! Error: Unexpected response code:", response.statusCode
 
       if locationSuccessCount == imageURLs.length
         newSubject = apiClient.type('subjects').create(subject)
-        await newSubject.save().then(defer _).catch(console.error.bind console)
-        log "Saved subject #{newSubject.id}"
+        await newSubject.save().then(defer _).catch(log.error.bind console)
+        log.info "Saved subject #{newSubject.id}"
       
       if newSubject?
         newSubjectIDs.push newSubject.id
       else
-        log "!!! Error: No subject created."
+        log.error "!!! Error: No subject created."
 
     # create subject with media upload
     else
       imageFileNames = findImagesFiles path.dirname(file), metadata
 
       if imageFileNames.length is 0
-        console.error "!!! Couldn't find an image for row #{i + 1}"
+        log.error "!!! Couldn't find an image for row #{i + 1}"
 
       else
         subject = apiClient.type('subjects').create
@@ -199,8 +211,8 @@ for file in args._
           links:
             project: args.project
 
-        await subject.save().then(defer _).catch(console.error.bind console)
-        log "Saved subject #{subject.id}"
+        await subject.save().then(defer _).catch(log.error.bind console)
+        log.info "Saved subject #{subject.id}"
 
         # Locations array has been transformed into [{"mime type": "URL to upload"}]
         successCount = 0
@@ -213,25 +225,24 @@ for file in args._
 
             if response?
               if 200 <= response.statusCode < 400
-                log "Uploaded image #{imageFileNames[ii]}"
+                log.info "Uploaded image #{imageFileNames[ii]}"
                 # Deal with multi-image subjects. Track if image upload is successful
                 successCount++
               else
                 error = response.body
 
             if error?
-              console.error '!!! Failed to put image', error
-              console.error "!!! Deleting subject #{subject.id}"
-              await subject.delete().then(defer _).catch(console.error.bind console)
+              log.error '!!! Failed to put image', error
+              log.error "!!! Deleting subject #{subject.id}"
+              await subject.delete().then(defer _).catch(log.error.bind console)
               break
 
           # Deal with multi-image subject. Only add new subject id once and if all images put successfully.
           newSubjectIDs.push subject.id if successCount is subject.locations.length
 
 if newSubjectIDs.length is 0
-  log 'No subjects to link'
+  log.info 'No subjects to link'
 else
-  await subjectSet.addLink('subjects', newSubjectIDs).then(defer _).catch(console.error.bind console)
-  log "Linked #{newSubjectIDs.length} subjects to subject set"
+  await subjectSet.addLink('subjects', newSubjectIDs).then(defer _).catch(log.error.bind console)
+  log.info "Linked #{newSubjectIDs.length} subjects to subject set"
 
-process.exit 0
