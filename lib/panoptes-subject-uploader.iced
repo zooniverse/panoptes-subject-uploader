@@ -4,7 +4,7 @@ minimist = require 'minimist'
 promptly = require 'promptly'
 auth = require 'panoptes-client/lib/auth'
 apiClient = require 'panoptes-client/lib/api-client'
-request = require 'request'
+request = require 'requestretry'
 path = require 'path'
 Baby = require 'babyparse'
 fs = require 'fs'
@@ -167,7 +167,7 @@ for file in args._
       subject.links = project: args.project
       imageURLs = findImagesURLs metadata
       
-      if imageURLs.length == 0
+      if imageURLs.length is 0
         log.error "!!! Couldn't find an media urls for row #{i + 1}"
       
       locationSuccessCount = 0
@@ -186,7 +186,7 @@ for file in args._
           else
             log.error "!!! Error: Unexpected response code:", response.statusCode
 
-      if locationSuccessCount == imageURLs.length
+      if locationSuccessCount is imageURLs.length
         newSubject = apiClient.type('subjects').create(subject)
         await newSubject.save().then(defer _).catch(log.error.bind console)
         log.info "Saved subject #{newSubject.id}"
