@@ -4,7 +4,7 @@ A command line client for uploading subjects to projects built on zooniverse.org
 
 ## Setup
 
-The client is working against Node.js >=0.10.36. Node.js must be setup first prior to installing it. [https://nodejs.org/en/download/package-manager/](Instructions for node.js installation).
+The client is working against Node.js >=0.10.36. Node.js must be setup first prior to installing it. [Instructions for node.js installation](https://nodejs.org/en/download/package-manager/).
 
 ### Installation
 
@@ -49,7 +49,7 @@ NODE_ENV=production panoptes-subject-uploader ./manifest1.csv --username user --
 
 #### Best Practices
 
-**General Usage:** It's recommended to upload relatively small batches at a time, 1000-2000 subjects. OSX and Linux users should consider running the client using [https://www.gnu.org/software/screen/manual/screen.html](screen) so the client can continue to run even if you close the terminal window.
+**General Usage:** It's recommended to upload relatively small batches at a time, 1000-2000 subjects. OSX and Linux users should consider running the client using [screen](https://www.gnu.org/software/screen/manual/screen.html) so the client can continue to run even if you close the terminal window.
 
 **Links without file extensions:** If you’re using media hosted elsewhere, the links to the media files must have one of the following file extensions: jpg, jpeg, gif, png, svg, mp4, txt. Links without one of those file extensions will be interpreted as subject metadata, not as a subject location.
 
