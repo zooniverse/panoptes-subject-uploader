@@ -51,7 +51,7 @@ NODE_ENV=production panoptes-subject-uploader ./manifest1.csv --username user --
 
 **General Usage:** It's recommended to upload relatively small batches at a time, 1000-2000 subjects. OSX and Linux users should consider running the client using [screen](https://www.gnu.org/software/screen/manual/screen.html) so the client can continue to run even if you close the terminal window.
 
-**Links without file extensions:** If you’re using media hosted elsewhere, the links to the media files must have one of the following file extensions: jpg, jpeg, gif, png, svg, mp4, txt. Links without one of those file extensions will be interpreted as subject metadata, not as a subject location.
+**Externally hosted media:** If you’re using media hosted elsewhere, the links to the media files must use HTTPS and have one of the following file extensions: jpg, jpeg, gif, png, svg, mp4, txt. Links without one of those file extensions will be interpreted as subject metadata, not as a subject location.
 
 **Logging:** The client will generate a log file, `panoptes-subject-uploader.log`, which will be written to the same folder that the client is run under. The log file will be appended on subsequent runs in the same folder. Logs are written in JSON format for ease of script use with it. 
 
