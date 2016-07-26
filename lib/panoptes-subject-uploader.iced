@@ -178,11 +178,11 @@ for file in args._
           log.error "!!! Error requesting URL for #{url} on row #{i + 1}:", error
         
         if response?
+          log.info "The number of attempts to request URL: #{response.attempts}" if response.attempts > 1
           if response.statusCode is 200
             mimeType = mime.lookup url
             subject.locations.push locationCreator(mimeType, url)
             locationSuccessCount++              
-            
           else
             log.error "!!! Error: Unexpected response code:", response.statusCode
 
@@ -224,6 +224,7 @@ for file in args._
             await request.put {headers, url, body}, defer error, response
 
             if response?
+              log.info "The number of attempts to upload media: #{response.attempts}" if response.attempts > 1
               if 200 <= response.statusCode < 400
                 log.info "Uploaded image #{imageFileNames[ii]}"
                 # Deal with multi-image subjects. Track if image upload is successful
@@ -245,4 +246,3 @@ if newSubjectIDs.length is 0
 else
   await subjectSet.addLink('subjects', newSubjectIDs).then(defer _).catch(log.error.bind console)
   log.info "Linked #{newSubjectIDs.length} subjects to subject set"
-
