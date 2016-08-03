@@ -189,7 +189,7 @@ for file in args._
       if locationSuccessCount isnt 0 and locationSuccessCount is imageURLs.length
         newSubject = apiClient.type('subjects').create(subject)
         await newSubject.save().then(defer _).catch(log.error.bind console)
-        log.info ">> Saved subject #{newSubject.id} for #{imageURLs}"
+        log.info "Saved subject #{newSubject.id} for #{imageURLs}"
       
       if newSubject?
         newSubjectIDs.push newSubject.id
@@ -212,7 +212,7 @@ for file in args._
             project: args.project
 
         await subject.save().then(defer _).catch(log.error.bind console)
-        log.info ">> Saved subject #{newSubject.id} for #{imageURLs}"
+        log.info "Saved subject #{newSubject.id} for #{imageURLs}"
 
         # Locations array has been transformed into [{"mime type": "URL to upload"}]
         successCount = 0
