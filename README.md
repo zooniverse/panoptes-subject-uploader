@@ -15,7 +15,7 @@ npm install --global panoptes-subject-uploader
 Then run it on (a) manifest file(s). **Images must be in the same directory as their manifest.**
 
 ```
-panoptes-subject-uploader ./path/to/manifest.csv ./another/path/to/a/different/one.csv
+NODE_ENV=production panoptes-subject-uploader ./path/to/manifest.csv ./another/path/to/a/different/one.csv
 ```
 
 All manifests specified in a single run of the command are put in the same subject set.
