@@ -2,6 +2,8 @@
 
 A command line client for uploading subjects to projects built on zooniverse.org (Panoptes).
 
+Important note: This code is not as well maintained as https://github.com/zooniverse/panoptes-cli or https://github.com/zooniverse/panoptes-python-client. Please consider using those routes for subject upload instead of this. 
+
 ## Setup
 
 The client is working against Node.js >=0.10.36. Node.js must be setup first prior to installing it. [Instructions for node.js installation](https://nodejs.org/en/download/package-manager/).
