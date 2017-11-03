@@ -2,7 +2,10 @@
 
 A command line client for uploading subjects to projects built on zooniverse.org (Panoptes).
 
-Important note: This code is not as well maintained as https://github.com/zooniverse/panoptes-cli or https://github.com/zooniverse/panoptes-python-client. Please consider using those routes for subject upload instead of this. 
+**Important note: This code is not maintained, please consider using the following supported alternatives.**
+
++ https://github.com/zooniverse/panoptes-cli
++ https://github.com/zooniverse/panoptes-python-client
 
 ## Setup
 
