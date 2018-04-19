@@ -160,7 +160,7 @@ for file in args._
     metadata = getMetadata row
     
     if args.skipMediaUpload
-
+      newSubject = null
       subject = {}
       subject.metadata = metadata
       subject.locations = []
@@ -186,10 +186,10 @@ for file in args._
           else
             log.error "!!! Error: Unexpected response code:", response.statusCode
 
-      if locationSuccessCount is imageURLs.length
+      if locationSuccessCount isnt 0 and locationSuccessCount is imageURLs.length
         newSubject = apiClient.type('subjects').create(subject)
         await newSubject.save().then(defer _).catch(log.error.bind console)
-        log.info "Saved subject #{newSubject.id}"
+        log.info "Saved subject #{newSubject.id} for #{imageURLs}"
       
       if newSubject?
         newSubjectIDs.push newSubject.id
@@ -212,7 +212,7 @@ for file in args._
             project: args.project
 
         await subject.save().then(defer _).catch(log.error.bind console)
-        log.info "Saved subject #{subject.id}"
+        log.info "Saved subject #{newSubject.id} for #{imageURLs}"
 
         # Locations array has been transformed into [{"mime type": "URL to upload"}]
         successCount = 0
